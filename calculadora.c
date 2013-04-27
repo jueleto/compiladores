@@ -2,6 +2,7 @@
  *	Analizador Léxico	
  *	Curso: Compiladores y Lenguajes de Bajo de Nivel
  *	Tarea 1
+ *  Responsable: Juan Emilio Ledesma
  *	Descripcion:
  * Implementar una calculadora de expresiones aritméticas, con manejo de
  * números reales, enteros o en notación científica. Recibe un archivo fuente
@@ -16,8 +17,7 @@
  * forma de tabla hash).
  *	
  */
- 
- 
+  
  
  /*********** LIbrerias utilizadas **************/
 
@@ -33,8 +33,8 @@
 #define OPSUMA		291
 #define OPMULT		292
 #define OPASIGNA	293
-
 // Fin Codigos
+
 #define TAMBUFF 	5
 #define TAMLEX 		50
 #define TAMHASH 	101
@@ -62,7 +62,6 @@ char tok[50];
 } g_token;
 
 
-
 /************* Variables globales **************/
 
 int consumir;			/* 1 indica al analizador lexico que debe devolver
@@ -82,14 +81,11 @@ int numLinea=1;			// Numero de Linea
 
 
 // Variables agregadas para infija, postifija y validacion
-char *pila[100];
-char *elemento;
-int cima=0;
-
-
+char *pila[100]; //para apilar en el momento de conversion a postfija y evaluacion del mismo.
+char *elemento; //elemento tope de la pila
+int cima=0; // cantidad de elementos que tiene la pila
 
 /************** Prototipos *********************/
-
 
 void sigLex();		// Del analizador Lexico
 
@@ -113,7 +109,6 @@ int stricmp(const char* cad,const char* cad2)
 
 //Infija a Postfija y Evaluacion de postfija ***************************
 
-
 void apilar (char cad[50])
 {
 	pila[cima]=cad;
@@ -121,6 +116,7 @@ void apilar (char cad[50])
 	cima++;
 }
 
+//Agregar elemento a la pila
 void desapilar()
 {
 	pila[cima]='\0';
@@ -128,30 +124,31 @@ void desapilar()
 	elemento=pila[cima];
 	
 }
-
+//Vaciar pila 
 void vaciar ()
 {
 	pila[0]="V";
 	cima=1;
 }
 
+//Retorna 1 si prioridad de op1 es mayor a op2
+//Retorna 2 si prioridad de op1 es menor o igual a op2
 int prioridad(char* op1, char* op2)
 {
 	int retornar=0;
 	if((strcmp(op1,"*")==0||strcmp(op1,"/")==0) && (strcmp(op2,"+")==0||strcmp(op2,"-")==0)){
-		//prioridad  
 		retornar=1;
 	}else {
 		//prioridad menor o igual
 		retornar=2;
 	}
 	return retornar;
-	
 }
 
-
+//Recibe un vector de tokens y lo convierte a notacion postfija
 void pasarPostfija(char *linea[50],int longitud){
 	
+	//En este vector se almacenar la notacion postfija o polaca
 	char *postfija[50];	
 	//indice de postfija
 	int x=0;
@@ -159,31 +156,31 @@ void pasarPostfija(char *linea[50],int longitud){
 	int k=0;
 	
 	//********Imprimir Infija
-	//printf("InFija: ");
+	printf("Linea %d--> ",(numLinea-1));
 	for(k;k<longitud;k++){
 		printf("%s",linea[k]);	
 	}
-//	printf("\n");
-	
-	
+
 	k=0;
+	//Iteramos hasta consumir todos los elementos de la infija
 	for(k;k<longitud;k++){
 		
+		//si es un operador
 		if(strcmp(linea[k],"+")==0 || strcmp(linea[k],"-")==0 ||strcmp(linea[k],"*")==0 ||strcmp(linea[k],"/")==0){	
-			//apilar(linea[k]);
-		
-			//printf("\nel:%s_pi1:%s_pi2:%s_ci:%d\n",elemento,pila[cima],pila[cima-1],cima);
-			//printf("prio entre %s y %s es:%d\n",linea[k],pila[cima-1],prioridad(linea[k],pila[cima-1]));
+			
+			//si la prioridad es mayor que el ultimo elemento de la pila o la pila esta vacia
+			//se apila
 			if(strcmp(pila[cima-1],"V")==0 || (prioridad(linea[k],pila[cima-1]))==1){
 				apilar(linea[k]);
-			}else {
+			} //si prioridad es menor o igual se desapila
+			else {
 				postfija[x]=pila[cima-1];
 				desapilar();
 				apilar(linea[k]);
 				x++;
 			}
 			
-		}else{ //Es un operando
+		}else{ //Es un operando se pasa a la notacion postfija
 			postfija[x]=linea[k];
 			x++;
 		}			
@@ -191,7 +188,7 @@ void pasarPostfija(char *linea[50],int longitud){
 	}
 	
 	
-	//Desapilar lo que queda
+	//Desapilar los elementos que queda
 	while(elemento!="V"){
 		desapilar();
 		postfija[x]=elemento;
@@ -199,12 +196,14 @@ void pasarPostfija(char *linea[50],int longitud){
 	}
 	x--;
 	
+	//le pasamos la notacion postfija a un evaluador de notacion postfija
 	evaluarPostfija(postfija,x);
 	
 }
 
-
+//Evalua la notacion postfija y calcula la operacion
 void evaluarPostfija(char *linea[50],int longitud){
+	
 	
 	double resultado;
 	double op1;
@@ -226,15 +225,19 @@ void evaluarPostfija(char *linea[50],int longitud){
 	printf("\n");
 	*/
 	
-	//Vaciamos la pila para reutilizarlo
+	//Vaciamos la pila para reutilizarla
 	vaciar();
 	
 	k=0;
+	//recorremos la notacion postfija
 	for(k;k<longitud;k++){
-		if(strcmp(linea[k],"+")==0 || strcmp(linea[k],"-")==0 ||strcmp(linea[k],"*")==0 ||strcmp(linea[k],"/")==0){	
 		
+		//si es un operador
+		if(strcmp(linea[k],"+")==0 || strcmp(linea[k],"-")==0 ||strcmp(linea[k],"*")==0 ||strcmp(linea[k],"/")==0){	
 			
+			//Si la pila NO esta vacia
 			if (elemento!="V"){
+				//obtenemos los ultimos 2 elementos de la pila y lo convertimos double
 				desapilar();
 				op2=atof(elemento);
 			
@@ -242,8 +245,7 @@ void evaluarPostfija(char *linea[50],int longitud){
 				op1=atof(elemento);
 			
 			
-			
-			//Comparar operaciones
+			//Comparar operaciones y realizamos la operacion segun corresponda
 			if(strcmp(linea[k],"+")==0){
 				resultado=op1+op2;
 			}else if (strcmp(linea[k],"-")==0){ 
@@ -254,12 +256,10 @@ void evaluarPostfija(char *linea[50],int longitud){
 				resultado=op1/op2;				
 			}
 			
-			//printf("op1: %.5f %s op2: %.5f = %.5f\n",op1,linea[k], op2,resultado);
-			
+			//El resultado del calculo anterior lo convertimos a cadena y lo apilamos
 			char toString[50];
 			sprintf(toString,"%.5f",resultado);
 			
-			//printf("cad %s\n",toString);
 			apilar(toString);
 			
 			resultado=0.0;
@@ -267,21 +267,18 @@ void evaluarPostfija(char *linea[50],int longitud){
 			op2=0.0;	
 			}
 
-		}else{
+		} //si es un operando lo apilamos
+		else{
 			apilar(linea[k]);
 		}
 	}
 	
-	//Imprimir Resultado
+	//Imprimir Resultado, si el resultado es null, significa que hay un errod sintactico
 	if(pila[1]=='\0'){
-		printf(" = Error Sintactico\n");
+		printf("  (Error Sintactico)\n");
 	}else{
 		printf(" = %s\n",pila[1]);
 	}
-	/*/Imrpimir Pila
-	for(x;x<cima;x++){
-		printf("%s_",pila[x]);
-	}*/	
 }
 
 /*********************HASH************************/
@@ -391,47 +388,10 @@ void insertTablaSimbolos(const char *s, int n)
 
 void initTablaSimbolos()
 {
-	int i;
-	entrada pr,*e;
-	const char *vector[]={
-		"program",
-		"type",
-		"var",
-		"array",
-		"begin",
-		"end",
-		"do",
-		"to",
-		"downto",
-		"then",
-		"of",
-		"function",
-		"procedure", 
-		"integer", 
-		"real", 
-		"boolean", 
-		"char", 
-		"for", 
-		"if", 
-		"else", 
-		"while", 
-		"repeat", 
-		"until", 
-		"case", 
-		"record", 
-		"writeln",
-		"write",
-		"const"
-	};
- 	for (i=0;i<28;i++)
-	{
-		insertTablaSimbolos(vector[i],i+256);
-	}
 	insertTablaSimbolos("+",OPSUMA);
 	insertTablaSimbolos("-",OPSUMA);
 	insertTablaSimbolos("*",OPMULT);
 	insertTablaSimbolos("/",OPMULT);
-	
 }
 
 // Rutinas del analizador lexico
@@ -469,6 +429,7 @@ void sigLex()
 				acepto=0;
 				id[i]=c;
 				
+				
 				while(!acepto)
 				{
 					switch(estado){
@@ -499,15 +460,8 @@ void sigLex()
 							id[++i]=c;
 							estado=2;
 						}
-						else if(c=='.')
-						{
-							i--;
-							fseek(archivo,-1,SEEK_CUR);
-							estado=6;
-						}
 						else{
-							sprintf(msg,"No se esperaba '%c'",c);
-							estado=-1;
+							estado=6;
 						}
 						break;
 					case 2://la fraccion decimal, pueden seguir los digitos o e
@@ -611,43 +565,28 @@ void sigLex()
 		}
 		else if (c=='/')
 		{
-			t.compLex=OPMULT;
-			t.pe=buscar("/");
-			break;
-		}
-		else if (c=='(')
-		{
-			if ((c=fgetc(archivo))=='*')
-			{//es un comentario
-				while(c!=EOF)
-				{
-					c=fgetc(archivo);
-					if (c=='*')
-					{
-						if ((c=fgetc(archivo))==')')
-						{
-							break;
-						}
-						ungetc(c,archivo);
-					}
-				}
-				if (c==EOF)
-					error("Se llego al fin de archivo sin finalizar un comentario");
-				continue;
+		   //comprobamos si es comentario
+            if ((c=fgetc(archivo))=='/') //es comentario
+            {
+					//ignorar hasta que sea fin de la linea
+               while(c!=EOF)
+			   {
+                     c=fgetc(archivo);  
+                     if(c=='\n'){
+                       ungetc(c,archivo);    
+                       break; 
+                     }        
+                }    
+                            
+            } // no es comentario
+            else{ 
+               ungetc(c,archivo); 	
+               t.compLex=OPMULT;
+			   t.pe=buscar("/");
+               break;
+			   
 			}
-			else
-			{
-				ungetc(c,archivo);
-				t.compLex='(';
-				t.pe=buscar("(");
-			}
-			break;
-		}
-		else if (c==')')
-		{
-			t.compLex=')';
-			t.pe=buscar(")");
-			break;
+
 		}
 		else if (c!=EOF)
 		{
@@ -691,42 +630,27 @@ int main(int argc,char* args[])
 		while (t.compLex!=EOF){
 			sigLex();
 			
+			//Cortamos cada vez que cambie numero de linea
 			if(g_nro_linea==numLinea){
 				strcat(linea, t.pe->lexema);
 				token_linea[j]=t.pe->lexema;
 				j++;
 			}else{
-			//	printf("%s\n",t.pe->lexema);
-			//	printf("Linea: %d\n",g_nro_linea);
-			//	printf("%s\n",linea);
 				linea[0]='\0';
 				strcat(linea, t.pe->lexema);
 				
 				//Vaciar pila y utilizarlo
 				vaciar();
+				//Convertimos a postfija la expresion y posteriormente lo evaluamos
 				pasarPostfija(token_linea,j);
-				
-				/*
-				int k=0;
-				printf("Infija cant. Caracteres j: %d\n",j);
-				for(k;k<j;k++){
-					printf("%s",token_linea[k]);	
-				}
-				printf("\n");
-				
-				*/
-				
 				
 				j=0;
 				token_linea[j]=t.pe->lexema;
 				j++;
 				g_nro_linea=numLinea;
-				
-				
 			}
 		
-			
-			//printf("Lin %d: %s -> %d\n",numLinea,t.pe->lexema,t.compLex);
+		//	printf("Lin %d: %s -> %d\n",numLinea,t.pe->lexema,t.compLex);
 		}
 		fclose(archivo);
 	}else{
