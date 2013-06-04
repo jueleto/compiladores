@@ -1,0 +1,35 @@
+
+//Uso de Write
+write(((6*8)+((3-7)*(1))));
+write((23541 - 14523));
+write(((1562-2563)/1745));
+
+//factorial de n
+var n,f;
+f=1;
+
+n=10;
+for i=2 to n step 1 do
+f=f*i;
+end for;
+write(f);
+
+//Condicionales
+var x,y;
+x=10;
+y=15;
+if x>y then
+write(x);
+else
+write(y);
+end if;
+
+//calcular y listar f(x)=x2, para 1<=x<=10
+var x[10],y[10];
+for i=1 to 10 step 1 do
+y[i]=i*i;
+x[i]=i;
+write(x[i]);
+write(": ");
+writeln(y[i]);
+end for;
